@@ -11,11 +11,7 @@ package org.openmrs.module.ssemrws.web.controller;
 
 import javax.servlet.http.HttpServletRequest;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
@@ -41,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.format.annotation.DateTimeFormat;
 
 /**
  * This class configured as controller using annotation and mapped with the URL of
@@ -154,11 +151,11 @@ public class SSEMRWebServicesController {
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/newClients")
 	// gets all visit forms for a patient
 	@ResponseBody
-	public Object getNewPatients(HttpServletRequest request, @RequestParam("startDate") Date startDate,
-	        @RequestParam("endDate") Date endDate) {
+	public Object getNewPatients(HttpServletRequest request,
+		 @RequestParam("startDate") @DateTimeFormat(pattern="dd-MM-yyyy") Date startDate,
+		 @RequestParam("endDate") @DateTimeFormat(pattern="dd-MM-yyyy") Date endDate) {
 		// Get all patients who were enrolled within the specified date range
-		EncounterType enrolmentEncounterType = Context.getEncounterService().getEncounterTypeByUuid(
-				enrolmentEncounterTypeUuid);
+		EncounterType enrolmentEncounterType = Context.getEncounterService().getEncounterTypeByUuid(enrolmentEncounterTypeUuid);
 		// Add a filter for current location
 		EncounterSearchCriteria encounterSearchCriteria = new EncounterSearchCriteria(
 						        null, null, startDate, endDate, null, null, Collections.singletonList(enrolmentEncounterType), null, null, null,
@@ -187,7 +184,7 @@ public class SSEMRWebServicesController {
 	public Object getActivePatients(HttpServletRequest request) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/dueForVl")
@@ -196,7 +193,7 @@ public class SSEMRWebServicesController {
 	public Object getPatientsDueForVl(HttpServletRequest request) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/highVl")
@@ -205,7 +202,7 @@ public class SSEMRWebServicesController {
 	public Object getPatientsOnHighVl(HttpServletRequest request) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/missedAppointment")
@@ -214,7 +211,7 @@ public class SSEMRWebServicesController {
 	public Object getPatientsMissedAppointment(HttpServletRequest request) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/interruptedInTreatment")
@@ -223,7 +220,7 @@ public class SSEMRWebServicesController {
 	public Object getPatientsInterruptedInTreatment(HttpServletRequest request) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/returnedToTreatment")
@@ -233,7 +230,7 @@ public class SSEMRWebServicesController {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		// Add logic to filter patients who have returned to treatment
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/adultRegimenTreatment")
@@ -243,7 +240,7 @@ public class SSEMRWebServicesController {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		// Add logic to filter patients on Adult regimen treatment
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/childRegimenTreatment")
@@ -253,7 +250,7 @@ public class SSEMRWebServicesController {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		// Add logic to filter patients on Child regimen treatment
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/underCareOfCommunityProgrammes")
@@ -263,12 +260,12 @@ public class SSEMRWebServicesController {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		// Add logic to filter patients on Child regimen treatment
 		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
+		return generatePatientListObj(allPatients);
 	}
 	
 	// Dummy method to be removed
-	private Object generatePatientListObj(HashSet<Patient> allPatients) {
-		return generatePatientListObj(allPatients, new Date());
+	private Object generatePatientListObj(Collection<Patient> allPatients) {
+		return generatePatientListObj((HashSet<Patient>) allPatients, new Date());
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/viralLoadSamplesCollected")
