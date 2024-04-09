@@ -57,8 +57,11 @@ public class SSEMRWebServicesController {
 	public static final String SAMPLE_COLLECTION_DATE_UUID = "ed520e2d-acb4-4ea9-8ae5-16ca27ace96d";
 	
 	public static final String YES_CONCEPT = "78763e68-104e-465d-8ce3-35f9edfb083d";
+	
 	public static final String LAST_REFILL_DATE_UUID = "80e34f1b-26e8-49ea-9b6e-d7d903a91e26";
-
+	
+	public static final String VIRAL_LOAD_CONCEPT_UUID = "01c3ce55-b7eb-45f5-93d5-bace353e3cfd";
+	
 	// Create Enum of the following filter categories: CHILDREN_ADOLESCENTS,
 	// PREGNANT_BREASTFEEDING, RETURN_FROM_IIT, RETURN_TO_TREATMENT
 	public enum filterCategory {
@@ -79,6 +82,8 @@ public class SSEMRWebServicesController {
 	public static final String CONCEPT_BY_UUID = "78763e68-104e-465d-8ce3-35f9edfb083d";
 	
 	public static final String TELEPHONE_NUMBER_UUID = "8f0a2a16-c073-4622-88ad-a11f2d6966ad";
+	
+	private static final double THRESHOLD = 1000.0;
 	
 	/** Logger for this class and subclasses */
 	protected final Log log = LogFactory.getLog(getClass());
@@ -203,7 +208,8 @@ public class SSEMRWebServicesController {
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/highVl")
 	// gets all visit forms for a patient
 	@ResponseBody
-	public Object getPatientsOnHighVl(HttpServletRequest request) {
+	public Object getPatientsOnHighVl(HttpServletRequest request, @RequestParam("startDate") Date startDate,
+	        @RequestParam("endDate") Date endDate) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		
 		return generatePatientListObj((HashSet<Patient>) allPatients);
@@ -484,7 +490,7 @@ public class SSEMRWebServicesController {
 		patientObj.put("returningFromIT", determineIfPatientIsReturningFromIT(patient));
 		patientObj.put("returningToTreatment", determineIfPatientIsReturningToTreatment(patient));
 		patientObj.put("dueForVl", determineIfPatientIsDueForVl(patient));
-		patientObj.put("highVl", determineIfPatientIsHighVl(patient));
+		patientObj.put("highVl", determineIfPatientIsHighVl(patient, endDate));
 		patientObj.put("onAppointment", determineIfPatientIsOnAppointment(patient));
 		patientObj.put("missedAppointment", determineIfPatientMissedAppointment(patient));
 		
@@ -544,10 +550,21 @@ public class SSEMRWebServicesController {
 		// return false;
 	}
 	
-	private static boolean determineIfPatientIsHighVl(Patient patient) {
-		return Math.random() < 0.5;
-		// TODO: Add logic to determine if patient is high VL
-		// return false;
+	private static boolean determineIfPatientIsHighVl(Patient patient, Date endDate) {
+		List<Concept> highVLConcept = new ArrayList<>();
+		highVLConcept.add(Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID));
+		
+		List<Obs> highVL = Context.getObsService().getObservations(Collections.singletonList(patient), null, highVLConcept,
+		    null, null, null, null, null, null, null, endDate, false);
+		
+		for (Obs obs : highVL) {
+			// Check if the viral load value is equal or above the threshold
+			if (obs.getValueNumeric() != null && obs.getValueNumeric() >= THRESHOLD) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	private static boolean determineIfPatientIsDueForVl(Patient patient) {
@@ -562,6 +579,39 @@ public class SSEMRWebServicesController {
 		// TODO: Add logic to determine if patient is new client - Check
 		// #logicToDetermineIfNewlyEnrolled method
 		// return false;
+	}
+	
+	private static boolean determineIfPatientIsReturningToTreatment(Patient patient) {
+		// Add logic to determine if patient is returning to treatment
+		// This is the definition of patients returning to treatment:
+		// Clients who experienced an interruption in treatment (IIT) during any
+		// previous reporting period, who successfully restarted ARVs within the
+		// reporting period and remained on treatment until the end of the reporting
+		// period."
+		return false;
+	}
+	
+	private static boolean determineIfPatientIsReturningFromIT(Patient patient) {
+		// Add logic to determine if patient is returning from IT
+		// This is the definition of patients returning from IT:
+		// clients who missed for at least 28 days from the last expected return visit
+		// date"
+		return false;
+	}
+	
+	private static boolean determineIfPatientIsPregnantOrBreastfeeding(Patient patient, Date endDate) {
+		
+		List<Concept> pregnantAndBreastfeedingConcepts = new ArrayList<>();
+		pregnantAndBreastfeedingConcepts
+		        .add(Context.getConceptService().getConceptByUuid(CURRENTLY_BREASTFEEDING_CONCEPT_UUID));
+		pregnantAndBreastfeedingConcepts.add(Context.getConceptService().getConceptByUuid(CURRENTLY_PREGNANT_CONCEPT_UUID));
+		
+		List<Obs> obsList = Context.getObsService().getObservations(Collections.singletonList(patient), null,
+		    pregnantAndBreastfeedingConcepts,
+		    Collections.singletonList(Context.getConceptService().getConceptByUuid(CONCEPT_BY_UUID)), null, null, null, null,
+		    null, null, endDate, false);
+		
+		return !obsList.isEmpty();
 	}
 	
 	private static String getLastRefillDate(Patient patient, Date endDate) {
@@ -600,39 +650,6 @@ public class SSEMRWebServicesController {
 		
 		return enrolledPatients;
 		
-	}
-	
-	private static boolean determineIfPatientIsReturningToTreatment(Patient patient) {
-		// Add logic to determine if patient is returning to treatment
-		// This is the definition of patients returning to treatment:
-		// Clients who experienced an interruption in treatment (IIT) during any
-		// previous reporting period, who successfully restarted ARVs within the
-		// reporting period and remained on treatment until the end of the reporting
-		// period."
-		return false;
-	}
-	
-	private static boolean determineIfPatientIsReturningFromIT(Patient patient) {
-		// Add logic to determine if patient is returning from IT
-		// This is the definition of patients returning from IT:
-		// clients who missed for at least 28 days from the last expected return visit
-		// date"
-		return false;
-	}
-	
-	private static boolean determineIfPatientIsPregnantOrBreastfeeding(Patient patient, Date endDate) {
-		
-		List<Concept> pregnantAndBreastfeedingConcepts = new ArrayList<>();
-		pregnantAndBreastfeedingConcepts
-		        .add(Context.getConceptService().getConceptByUuid(CURRENTLY_BREASTFEEDING_CONCEPT_UUID));
-		pregnantAndBreastfeedingConcepts.add(Context.getConceptService().getConceptByUuid(CURRENTLY_PREGNANT_CONCEPT_UUID));
-		
-		List<Obs> obsList = Context.getObsService().getObservations(Collections.singletonList(patient), null,
-		    pregnantAndBreastfeedingConcepts,
-		    Collections.singletonList(Context.getConceptService().getConceptByUuid(CONCEPT_BY_UUID)), null, null, null, null,
-		    null, null, endDate, false);
-		
-		return !obsList.isEmpty();
 	}
 	
 	private Object generateViralLoadListObj(List<Patient> allPatients) {
