@@ -10,7 +10,6 @@
 package org.openmrs.module.ssemrws.web.controller;
 
 import javax.servlet.http.HttpServletRequest;
-import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -53,6 +52,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 public class SSEMRWebServicesController {
 	
 	public static final String VL_LAB_REQUEST_ENCOUNTER_TYPE = "82024e00-3f10-11e4-adec-0800271c1b75";
+	
+	public static final String FOLLOW_UP_FORM_ENCOUNTER_TYPE = "e8481555-9dd1-4bb5-ba8c-cb721dafb166";
 	
 	public static final String SAMPLE_COLLECTION_DATE_UUID = "ed520e2d-acb4-4ea9-8ae5-16ca27ace96d";
 	
@@ -178,15 +179,6 @@ public class SSEMRWebServicesController {
 		return generatePatientListObj(new HashSet<>(allPatients), endDate, filterCategory);
 	}
 	
-	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/newClients")
-	// gets all visit forms for a patient
-	@ResponseBody
-	public Object getNewPatients(HttpServletRequest request, @RequestParam("startDate") Date startDate,
-	        @RequestParam("endDate") Date endDate) {
-		HashSet<Patient> enrolledPatients = getNewlyEnrolledPatients(startDate, endDate);
-		return generatePatientListObj(enrolledPatients, endDate);
-	}
-	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/activeClients")
 	// gets all visit forms for a patient
 	@ResponseBody
@@ -200,16 +192,6 @@ public class SSEMRWebServicesController {
 	// gets all visit forms for a patient
 	@ResponseBody
 	public Object getPatientsDueForVl(HttpServletRequest request) {
-		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
-		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
-	}
-	
-	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/highVl")
-	// gets all visit forms for a patient
-	@ResponseBody
-	public Object getPatientsOnHighVl(HttpServletRequest request, @RequestParam("startDate") Date startDate,
-	        @RequestParam("endDate") Date endDate) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		
 		return generatePatientListObj((HashSet<Patient>) allPatients);
@@ -275,10 +257,9 @@ public class SSEMRWebServicesController {
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/viralLoadSamplesCollected")
 	@ResponseBody
-	public Object getViralLoadSamplesCollected(HttpServletRequest request,
-	        @RequestParam(value = "startDate") String qStartDate, @RequestParam(value = "endDate") String qEndDate,
+	public Object getViralLoadSamplesCollected(@RequestParam(value = "startDate") String qStartDate,
+	        @RequestParam(value = "endDate") String qEndDate,
 	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) {
-		ObjectNode simpleObject = JsonNodeFactory.instance.objectNode();
 		try {
 			Date startDate = dateTimeFormatter.parse(qStartDate);
 			Date endDate = dateTimeFormatter.parse(qEndDate);
@@ -295,7 +276,8 @@ public class SSEMRWebServicesController {
 			    Collections.singletonList(sampleCollectionDateConcept), null, null, null, null, null, null, null, endDate,
 			    false);
 			
-			simpleObject = generateDashboardSummaryFromObs(startDate, endDate, sampleCollectionDateObs, null);
+			ObjectNode simpleObject = generateDashboardSummaryFromObs(startDate, endDate, sampleCollectionDateObs,
+			    filterCategory);
 			
 			return simpleObject;
 			
@@ -373,14 +355,12 @@ public class SSEMRWebServicesController {
 			}
 		}
 		ObjectMapper mapper = new ObjectMapper();
-		simpleObject.put("results", mapper.convertValue(monthlyGrouping, ObjectNode.class));
+		ObjectNode summaryNode = mapper.createObjectNode();
+		summaryNode.put("groupYear", mapper.valueToTree(monthlySummary));
+		summaryNode.put("groupMonth", mapper.valueToTree(weeklySummary));
+		summaryNode.put("groupWeek", mapper.valueToTree(dailySummary));
 		
-		SummarySection summary = new SummarySection(JsonNodeFactory.instance);
-		summary.setGroupYear(mapper.convertValue(monthlySummary, ObjectNode.class));
-		summary.setGroupMonth(mapper.convertValue(weeklySummary, ObjectNode.class));
-		summary.setGroupWeek(mapper.convertValue(dailySummary, ObjectNode.class));
-		
-		simpleObject.put("summary", summary.toString());
+		simpleObject.put("summary", summaryNode);
 		
 		return simpleObject;
 	}
@@ -485,7 +465,7 @@ public class SSEMRWebServicesController {
 		patientObj.put("dateEnrolled", dateEnrolled);
 		patientObj.put("lastRefillDate", lastRefillDate);
 		patientObj.put("newClient", determineIfPatientIsNewClient(patient, startDate, endDate));
-		patientObj.put("childOrAdolescent", age <= 19 ? "True" : "False");
+		patientObj.put("childOrAdolescent", age <= 19 ? true : false);
 		patientObj.put("pregnantAndBreastfeeding", determineIfPatientIsPregnantOrBreastfeeding(patient, endDate));
 		patientObj.put("returningFromIT", determineIfPatientIsReturningFromIT(patient));
 		patientObj.put("returningToTreatment", determineIfPatientIsReturningToTreatment(patient));
@@ -550,21 +530,53 @@ public class SSEMRWebServicesController {
 		// return false;
 	}
 	
+	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/highVl")
+	// gets all visit forms for a patient
+	@ResponseBody
+	public Object getPatientsOnHighVl(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
+	        @RequestParam("endDate") String qEndDate,
+	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
+		
+		Date startDate = dateTimeFormatter.parse(qStartDate);
+		Date endDate = dateTimeFormatter.parse(qEndDate);
+		
+		HashSet<Patient> highVLPatients = getPatientsWithHighVL(startDate, endDate);
+		
+		return generatePatientListObj(highVLPatients, endDate);
+	}
+	
 	private static boolean determineIfPatientIsHighVl(Patient patient, Date endDate) {
-		List<Concept> highVLConcept = new ArrayList<>();
-		highVLConcept.add(Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID));
+		Concept vlConcept = Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID);
+		List<Obs> vlObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
+		    Collections.singletonList(vlConcept), null, null, null, null, 1, null, null, endDate, false);
+		if (vlObs != null && !vlObs.isEmpty()) {
+			return vlObs.get(0).getValueNumeric() >= THRESHOLD;
+		}
+		return false;
+	}
+	
+	// Get all patients who have high Viral Load
+	private HashSet<Patient> getPatientsWithHighVL(Date startDate, Date endDate) {
+		EncounterType followUpEncounterType = Context.getEncounterService()
+		        .getEncounterTypeByUuid(FOLLOW_UP_FORM_ENCOUNTER_TYPE);
+		EncounterSearchCriteria encounterSearchCriteria = new EncounterSearchCriteria(null, null, startDate, endDate, null,
+		        null, Collections.singletonList(followUpEncounterType), null, null, null, false);
+		List<Encounter> encounters = Context.getEncounterService().getEncounters(encounterSearchCriteria);
 		
-		List<Obs> highVL = Context.getObsService().getObservations(Collections.singletonList(patient), null, highVLConcept,
-		    null, null, null, null, null, null, null, endDate, false);
+		HashSet<Patient> highVLPatients = new HashSet<>();
 		
-		for (Obs obs : highVL) {
-			// Check if the viral load value is equal or above the threshold
-			if (obs.getValueNumeric() != null && obs.getValueNumeric() >= THRESHOLD) {
-				return true;
+		List<Obs> highVLObs = Context.getObsService().getObservations(null, encounters,
+		    Collections.singletonList(Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID)), null, null,
+		    null, null, null, null, null, endDate, false);
+		
+		for (Obs obs : highVLObs) {
+			if (obs.getValueNumeric() != null && obs.getValueNumeric() >= 1000) {
+				highVLPatients.add((Patient) obs.getPerson());
 			}
 		}
 		
-		return false;
+		return highVLPatients;
+		
 	}
 	
 	private static boolean determineIfPatientIsDueForVl(Patient patient) {
@@ -615,15 +627,29 @@ public class SSEMRWebServicesController {
 	}
 	
 	private static String getLastRefillDate(Patient patient, Date endDate) {
-		Concept lastRefillDateConcept = Context.getConceptService().getConceptByUuid(LAST_REFILL_DATE_UUID);
-		List<Obs> LastRefillDateObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()),
-		    null, Collections.singletonList(lastRefillDateConcept), null, null, null, null, 1, null, null, endDate, false);
+		List<Concept> lastRefillDateConcept = new ArrayList<>();
+		
+		lastRefillDateConcept.add(Context.getConceptService().getConceptByUuid(LAST_REFILL_DATE_UUID));
+		List<Obs> LastRefillDateObs = Context.getObsService().getObservations(Collections.singletonList(patient), null,
+		    lastRefillDateConcept, null, null, null, null, 1, null, null, endDate, false);
 		
 		String lastRefillDate = "";
 		if (LastRefillDateObs != null && !LastRefillDateObs.isEmpty()) {
 			dateTimeFormatter.format(LastRefillDateObs.get(0).getValueDate());
 		}
 		return lastRefillDate;
+	}
+	
+	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/newClients")
+	// gets all visit forms for a patient
+	@ResponseBody
+	public Object getNewPatients(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
+	        @RequestParam("endDate") String qEndDate,
+	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
+		Date startDate = dateTimeFormatter.parse(qStartDate);
+		Date endDate = dateTimeFormatter.parse(qEndDate);
+		HashSet<Patient> enrolledPatients = getNewlyEnrolledPatients(startDate, endDate);
+		return generatePatientListObj(enrolledPatients, endDate);
 	}
 	
 	private HashSet<Patient> getNewlyEnrolledPatients(Date startDate, Date endDate) {
