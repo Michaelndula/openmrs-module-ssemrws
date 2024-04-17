@@ -734,7 +734,6 @@ public class SSEMRWebServicesController {
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/newClients")
-	// gets all visit forms for a patient
 	@ResponseBody
 	public Object getNewPatients(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
 	        @RequestParam("endDate") String qEndDate,
