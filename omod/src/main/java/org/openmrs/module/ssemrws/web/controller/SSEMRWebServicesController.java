@@ -253,7 +253,7 @@ public class SSEMRWebServicesController {
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/viralLoadSamplesCollected")
 	@ResponseBody
-	public Object getViralLoadSamplesCollected(@RequestParam(value = "startDate") String qStartDate,
+	public Object getViralLoadSamplesCollected(HttpServletRequest request, @RequestParam(value = "startDate") String qStartDate,
 	        @RequestParam(value = "endDate") String qEndDate,
 	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) {
 		try {
