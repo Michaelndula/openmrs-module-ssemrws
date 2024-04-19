@@ -522,7 +522,14 @@ public class SSEMRWebServicesController {
 		// TODO: Add logic to determine if patient was on appointment
 		// return false;
 	}
-	
+
+	/**
+	 * Handles the HTTP GET request to retrieve patients with high viral load values within a specified date range.
+	 * This method filters patients based on their viral load observations, identifying those with values above a predefined threshold.
+	 *
+	 * @param request The HttpServletRequest object, providing request information for HTTP servlets.
+	 * @return A JSON representation of the list of patients with high viral load, including summary information about each patient.
+	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/highVl")
 	// gets all visit forms for a patient
 	@ResponseBody
@@ -536,16 +543,6 @@ public class SSEMRWebServicesController {
 		HashSet<Patient> highVLPatients = getPatientsWithHighVL(startDate, endDate);
 		
 		return generatePatientListObj(highVLPatients, endDate);
-	}
-	
-	private static boolean determineIfPatientIsHighVl(Patient patient, Date endDate) {
-		Concept vlConcept = Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID);
-		List<Obs> vlObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
-		    Collections.singletonList(vlConcept), null, null, null, null, 1, null, null, endDate, false);
-		if (vlObs != null && !vlObs.isEmpty()) {
-			return vlObs.get(0).getValueNumeric() >= THRESHOLD;
-		}
-		return false;
 	}
 	
 	// Get all patients who have high Viral Load
@@ -563,13 +560,23 @@ public class SSEMRWebServicesController {
 		    null, null, null, null, null, endDate, false);
 		
 		for (Obs obs : highVLObs) {
-			if (obs.getValueNumeric() != null && obs.getValueNumeric() >= 1000) {
+			if (obs.getValueNumeric() != null && obs.getValueNumeric() >= THRESHOLD) {
 				highVLPatients.add((Patient) obs.getPerson());
 			}
 		}
 		
 		return highVLPatients;
 		
+	}
+	// Determine if Patient is High Viral Load and return true if it is equal or above threshold
+	private static boolean determineIfPatientIsHighVl(Patient patient, Date endDate) {
+		Concept vlConcept = Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID);
+		List<Obs> vlObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
+				Collections.singletonList(vlConcept), null, null, null, null, 1, null, null, endDate, false);
+		if (vlObs != null && !vlObs.isEmpty()) {
+			return vlObs.get(0).getValueNumeric() >= THRESHOLD;
+		}
+		return false;
 	}
 	
 	private static boolean determineIfPatientIsDueForVl(Patient patient) {
@@ -585,7 +592,15 @@ public class SSEMRWebServicesController {
 		// #logicToDetermineIfNewlyEnrolled method
 		// return false;
 	}
-	
+
+	/**
+	 * Handles the HTTP GET request to retrieve patients who have returned to treatment after an interruption.
+	 * This method filters encounters based on ART treatment interruption encounter types and aggregates patients
+	 * who have returned to treatment within the specified date range.
+	 *
+	 * @param request The HttpServletRequest object, providing request information for HTTP servlets.
+	 * @return A JSON representation of the list of patients who have returned to treatment, including summary information about each patient.
+	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/returnedToTreatment")
 	@ResponseBody
 	public Object getPatientsReturnedToTreatment(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
@@ -603,12 +618,12 @@ public class SSEMRWebServicesController {
 		HashSet<Patient> returnedToTreatmentPatients = returnedToTreatmentEncounters.stream().map(Encounter::getPatient)
 		        .collect(Collectors.toCollection(HashSet::new));
 		
-		List<Obs> regimenObs = Context.getObsService().getObservations(null, returnedToTreatmentEncounters,
+		List<Obs> returnedToTreatmentObs = Context.getObsService().getObservations(null, returnedToTreatmentEncounters,
 		    Collections.singletonList(Context.getConceptService().getConceptByUuid(RETURNING_TO_TREATMENT_UUID)),
 		    Collections.singletonList(Context.getConceptService().getConceptByUuid(CONCEPT_BY_UUID)), null, null, null, null,
 		    null, null, endDate, false);
 		
-		HashSet<Patient> interruptedInTreatmentEncountersClients = regimenObs.stream()
+		HashSet<Patient> interruptedInTreatmentEncountersClients = returnedToTreatmentObs.stream()
 		        .filter(obs -> obs.getPerson() instanceof Patient).map(obs -> (Patient) obs.getPerson())
 		        .collect(Collectors.toCollection(HashSet::new));
 		
@@ -629,7 +644,14 @@ public class SSEMRWebServicesController {
 		
 		return !obsList.isEmpty();
 	}
-	
+
+	/**
+	 * Handles the HTTP GET request to retrieve patients who have experienced an interruption in their treatment.
+	 * This method filters encounters based on ART treatment interruption encounter types and aggregates patients
+	 * who have had such encounters within the specified date range. It aims to identify patients who might need
+	 * follow-up or intervention due to treatment interruption.
+	 *
+	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/interruptedInTreatment")
 	@ResponseBody
 	public Object getPatientsInterruptedInTreatment(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
@@ -646,11 +668,11 @@ public class SSEMRWebServicesController {
 		HashSet<Patient> interruptedInTreatmentPatients = interruptedInTreatmentEncounters.stream()
 		        .map(Encounter::getPatient).collect(Collectors.toCollection(HashSet::new));
 		
-		List<Obs> regimenObs = Context.getObsService().getObservations(null, interruptedInTreatmentEncounters,
+		List<Obs> interruptedInTreatmentObs = Context.getObsService().getObservations(null, interruptedInTreatmentEncounters,
 		    Collections.singletonList(Context.getConceptService().getConceptByUuid(INTERRUPTION_IN_TREATMENT_UUID)), null,
 		    null, null, null, null, null, null, endDate, false);
 		
-		HashSet<Patient> interruptedInTreatmentEncountersClients = regimenObs.stream()
+		HashSet<Patient> interruptedInTreatmentEncountersClients = interruptedInTreatmentObs.stream()
 		        .filter(obs -> obs.getPerson() instanceof Patient).map(obs -> (Patient) obs.getPerson())
 		        .collect(Collectors.toCollection(HashSet::new));
 		
@@ -672,14 +694,9 @@ public class SSEMRWebServicesController {
 	}
 	
 	/**
-	 * Handles the request to get a list of active patients within a specified date range. Active
-	 * patients are determined based on an active regimen.
-	 * 
-	 * @param request The HttpServletRequest object, providing request information for HTTP servlets.
-	 * @param qStartDate The start date of the period for which active patients are queried, in a string
-	 *            format.
-	 * @param qEndDate The end date of the period for which active patients are queried, in a string
-	 *            format.
+	 * Handles the request to get a list of active patients within a specified date range.
+	 * Active patients are determined based on an active Regimen.
+	 *
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/activeClients")
 	@ResponseBody
@@ -709,7 +726,8 @@ public class SSEMRWebServicesController {
 		
 		return generatePatientListObj(activePatients, endDate);
 	}
-	
+
+	// Retrieves a list of encounters filtered by encounter types.
 	private List<Encounter> getEncountersByEncounterTypes(List<String> encounterTypeUuids, Date startDate, Date endDate) {
 		List<EncounterType> encounterTypes = encounterTypeUuids.stream()
 		        .map(uuid -> Context.getEncounterService().getEncounterTypeByUuid(uuid)).collect(Collectors.toList());
@@ -718,7 +736,8 @@ public class SSEMRWebServicesController {
 		        encounterTypes, null, null, null, false);
 		return Context.getEncounterService().getEncounters(encounterCriteria);
 	}
-	
+
+	// Determine if Patient is Pregnant or Breastfeeding
 	private static boolean determineIfPatientIsPregnantOrBreastfeeding(Patient patient, Date endDate) {
 		
 		List<Concept> pregnantAndBreastfeedingConcepts = new ArrayList<>();
@@ -733,7 +752,8 @@ public class SSEMRWebServicesController {
 		
 		return !obsList.isEmpty();
 	}
-	
+
+	// Retrieve the Last Refill Date from Patient Observation
 	private static String getLastRefillDate(Patient patient, Date startDate, Date endDate) {
 		Concept lastRefillDateConcept = Context.getConceptService().getConceptByUuid(LAST_REFILL_DATE_UUID);
 		List<Obs> lastRefillDateObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()),
@@ -786,7 +806,8 @@ public class SSEMRWebServicesController {
 		return enrolledPatients;
 		
 	}
-	
+
+	// Determine Patient Enrollment Date From the Adult and Adolescent and Pediatric Forms
 	private static String determineEnrolmentDate(Patient patient, Date startDate, Date endDate) {
 		Concept enrollmentDateConcept = Context.getConceptService().getConceptByUuid(DATE_OF_ENROLLMENT_UUID);
 		List<Obs> enrollmentDateObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()),
