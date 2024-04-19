@@ -225,7 +225,12 @@ public class SSEMRWebServicesController {
 		
 		return generatePatientListObj((HashSet<Patient>) allPatients);
 	}
-	
+
+	/**
+	 * Retrieves a list of patients under the care of community programs within a specified date range.
+	 *
+	 * @return An Object representing the list of patients under the care of community programs within the specified date range.
+	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/underCareOfCommunityProgrammes")
 	@ResponseBody
 	public Object getPatientsUnderCareOfCommunityProgrammes(HttpServletRequest request,
@@ -233,16 +238,16 @@ public class SSEMRWebServicesController {
 	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
 		Date startDate = dateTimeFormatter.parse(qStartDate);
 		Date endDate = dateTimeFormatter.parse(qEndDate);
-		
+
 		EncounterType communityLinkageEncounterType = Context.getEncounterService()
 		        .getEncounterTypeByUuid(COMMUNITY_LINKAGE_ENCOUNTER_UUID);
 		EncounterSearchCriteria encounterSearchCriteria = new EncounterSearchCriteria(null, null, startDate, endDate, null,
 		        null, Collections.singletonList(communityLinkageEncounterType), null, null, null, false);
 		List<Encounter> encounters = Context.getEncounterService().getEncounters(encounterSearchCriteria);
-		
+
 		HashSet<Patient> underCareOfCommunityPatients = encounters.stream().map(Encounter::getPatient).collect(HashSet::new,
 		    HashSet::add, HashSet::addAll);
-		
+
 		return generatePatientListObj(underCareOfCommunityPatients, endDate);
 	}
 	
@@ -527,7 +532,6 @@ public class SSEMRWebServicesController {
 	 * Handles the HTTP GET request to retrieve patients with high viral load values within a specified date range.
 	 * This method filters patients based on their viral load observations, identifying those with values above a predefined threshold.
 	 *
-	 * @param request The HttpServletRequest object, providing request information for HTTP servlets.
 	 * @return A JSON representation of the list of patients with high viral load, including summary information about each patient.
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/highVl")
