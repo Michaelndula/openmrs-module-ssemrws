@@ -457,6 +457,8 @@ public class SSEMRWebServicesController {
 	private static ObjectNode generatePatientObject(Date endDate, filterCategory filterCategory, Patient patient) {
 		ObjectNode patientObj = JsonNodeFactory.instance.objectNode();
 		Date startDate = new Date();
+		String dateEnrolled = determineEnrolmentDate(patient, startDate, endDate);
+		String lastRefillDate = getLastRefillDate(patient, startDate, endDate);
 		// Calculate age in years based on patient's birthdate and current date
 		Date birthdate = patient.getBirthdate();
 		Date currentDate = new Date();
@@ -467,8 +469,8 @@ public class SSEMRWebServicesController {
 		patientObj.put("identifier",
 		    patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().toString() : "");
 		patientObj.put("sex", patient.getGender());
-		patientObj.put("dateEnrolled", determineEnrolmentDate(patient, startDate, endDate));
-		patientObj.put("lastRefillDate", getLastRefillDate(patient, startDate, endDate));
+		patientObj.put("dateEnrolled", dateEnrolled);
+		patientObj.put("lastRefillDate", lastRefillDate);
 		patientObj.put("newClient", determineIfPatientIsNewClient(patient, startDate, endDate));
 		patientObj.put("childOrAdolescent", age <= 19 ? true : false);
 		patientObj.put("pregnantAndBreastfeeding", determineIfPatientIsPregnantOrBreastfeeding(patient, endDate));
