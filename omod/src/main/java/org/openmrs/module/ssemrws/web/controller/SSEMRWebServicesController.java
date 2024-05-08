@@ -13,7 +13,11 @@ import javax.servlet.http.HttpServletRequest;
 import java.text.DateFormatSymbols;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.time.DateUtils;
@@ -71,6 +75,8 @@ public class SSEMRWebServicesController {
 	public static final String COMMUNITY_LINKAGE_ENCOUNTER_UUID = "3c2df02e-6856-11ee-8c99-0242ac120002";
 	
 	public static final String DATE_OF_ENROLLMENT_UUID = "e27f8561-e242-4744-9193-b84d752dd86d";
+	
+	public static final String DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID = "e605731b-2e81-41a9-8446-2ed442c339e2";
 	
 	// Create Enum of the following filter categories: CHILDREN_ADOLESCENTS,
 	// PREGNANT_BREASTFEEDING, RETURN_FROM_IIT, RETURN_TO_TREATMENT
@@ -192,15 +198,6 @@ public class SSEMRWebServicesController {
 	// gets all visit forms for a patient
 	@ResponseBody
 	public Object getPatientsDueForVl(HttpServletRequest request) {
-		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
-		
-		return generatePatientListObj((HashSet<Patient>) allPatients);
-	}
-	
-	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/missedAppointment")
-	// gets all visit forms for a patient
-	@ResponseBody
-	public Object getPatientsMissedAppointment(HttpServletRequest request) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		
 		return generatePatientListObj((HashSet<Patient>) allPatients);
@@ -372,73 +369,24 @@ public class SSEMRWebServicesController {
 		return generateViralLoadListObj(allPatients);
 	}
 	
-	/**
-	 * Retrieves Clients with viral load coverage data
-	 * 
-	 * @return JSON representation of the list of patients with viral load coverage data
-	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/viralLoadCoverage")
+	// gets all visit forms for a patient
 	@ResponseBody
-	public Object getViralLoadCoverage(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
-	        @RequestParam("endDate") String qEndDate,
-	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
-		Date startDate = dateTimeFormatter.parse(qStartDate);
-		Date endDate = dateTimeFormatter.parse(qEndDate);
+	public Object getViralLoadCoverage(HttpServletRequest request) {
+		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
+		// Add logic to filter patients on Child regimen treatment
 		
-		List<String> encounterTypeUuids = Collections.singletonList(FOLLOW_UP_FORM_ENCOUNTER_TYPE);
-		
-		List<Encounter> viralLoadCoverageEncounters = getEncountersByEncounterTypes(encounterTypeUuids, startDate, endDate);
-		
-		HashSet<Patient> viralLoadPatients = viralLoadCoverageEncounters.stream().map(Encounter::getPatient)
-		        .collect(Collectors.toCollection(HashSet::new));
-		
-		List<Obs> viralLoadObs = Context.getObsService().getObservations(null, viralLoadCoverageEncounters,
-		    Collections.singletonList(Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID)), null, null,
-		    null, null, null, null, startDate, endDate, false);
-		
-		HashSet<Patient> viralLoadCoveredClients = viralLoadObs.stream().filter(obs -> obs.getPerson() instanceof Patient)
-		        .map(obs -> (Patient) obs.getPerson()).collect(Collectors.toCollection(HashSet::new));
-		
-		viralLoadPatients.addAll(viralLoadCoveredClients);
-		
-		return generatePatientListObj(viralLoadPatients, endDate);
+		return generateViralLoadListObj(allPatients);
 	}
 	
-	/**
-	 * Handles the HTTP GET request to retrieve patients with Suppressed viral load values. This method
-	 * filters patients based on their viral load observations, identifying those with values below a
-	 * predefined threshold.
-	 * 
-	 * @return A JSON representation of the list of patients with Suppressed viral load
-	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/viralLoadSuppression")
+	// gets all visit forms for a patient
 	@ResponseBody
-	public Object getViralLoadSuppression(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
-	        @RequestParam("endDate") String qEndDate,
-	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
+	public Object getViralLoadSuppression(HttpServletRequest request) {
+		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
+		// Add logic to filter patients on Child regimen treatment
 		
-		Date startDate = dateTimeFormatter.parse(qStartDate);
-		Date endDate = dateTimeFormatter.parse(qEndDate);
-		
-		EncounterType followUpEncounterType = Context.getEncounterService()
-		        .getEncounterTypeByUuid(FOLLOW_UP_FORM_ENCOUNTER_TYPE);
-		EncounterSearchCriteria viralLoadSuppressedSearchCriteria = new EncounterSearchCriteria(null, null, startDate,
-		        endDate, null, null, Collections.singletonList(followUpEncounterType), null, null, null, false);
-		List<Encounter> encounters = Context.getEncounterService().getEncounters(viralLoadSuppressedSearchCriteria);
-		
-		HashSet<Patient> viralLoadSuppressedPatients = new HashSet<>();
-		
-		List<Obs> viralLoadSuppressedPatientsObs = Context.getObsService().getObservations(null, encounters,
-		    Collections.singletonList(Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID)), null, null,
-		    null, null, null, null, startDate, endDate, false);
-		
-		for (Obs obs : viralLoadSuppressedPatientsObs) {
-			if (obs.getValueNumeric() != null && obs.getValueNumeric() < THRESHOLD) {
-				viralLoadSuppressedPatients.add((Patient) obs.getPerson());
-			}
-		}
-		
-		return generatePatientListObj(viralLoadSuppressedPatients, endDate);
+		return generateViralLoadListObj(allPatients);
 	}
 	
 	private Object generatePatientListObj(HashSet<Patient> allPatients) {
@@ -533,8 +481,8 @@ public class SSEMRWebServicesController {
 		patientObj.put("returningToTreatment", determineIfPatientIsReturningToTreatment(patient, endDate));
 		patientObj.put("dueForVl", determineIfPatientIsDueForVl(patient));
 		patientObj.put("highVl", determineIfPatientIsHighVl(patient, endDate));
-		patientObj.put("onAppointment", determineIfPatientIsOnAppointment(patient));
-		patientObj.put("missedAppointment", determineIfPatientMissedAppointment(patient));
+		patientObj.put("onAppointment", determineIfPatientIsOnAppointment(patient, endDate));
+		patientObj.put("missedAppointment", determineIfPatientMissedAppointment(patient, endDate));
 		
 		// check filter category and filter patients based on the category
 		if (filterCategory != null) {
@@ -565,17 +513,156 @@ public class SSEMRWebServicesController {
 		return null;
 	}
 	
-	private static boolean determineIfPatientMissedAppointment(Patient patient) {
+	/**
+	 * Returns a list of patients who missed an appointment.
+	 * 
+	 * @return A JSON representation of the list of patients who missed an appointment, including
+	 *         summary information about each patient.
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/missedAppointment")
+	@ResponseBody
+	public Object getPatientsMissedAppointment(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
+	        @RequestParam("endDate") String qEndDate,
+	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
+		Date startDate = dateTimeFormatter.parse(qStartDate);
+		Date endDate = dateTimeFormatter.parse(qEndDate);
 		
-		return Math.random() < 0.5;
-		// TODO: Add logic to determine if patient Missed appointment
-		// return false;
+		List<String> misseAppointmentencounterTypeUuids = Collections.singletonList(FOLLOW_UP_FORM_ENCOUNTER_TYPE);
+		
+		List<Encounter> missedAppointmentEncounters = getEncountersByEncounterTypes(misseAppointmentencounterTypeUuids,
+		    startDate, endDate);
+		
+		List<Obs> missedAppointmentObs = Context.getObsService().getObservations(null, missedAppointmentEncounters,
+		    Collections.singletonList(Context.getConceptService().getConceptByUuid(DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID)),
+		    null, null, null, null, null, null, null, endDate, false);
+		
+		HashSet<Patient> missedAppointmentPatientsFiltered = missedAppointmentObs.stream()
+		        .filter(obs -> obs.getPerson() instanceof Patient).map(obs -> (Patient) obs.getPerson()).filter(patient -> {
+			        Date appointmentScheduledDate = null;
+			        for (Obs obs : missedAppointmentObs) {
+				        if (obs.getPerson().equals(patient)
+				                && obs.getConcept().getUuid().equals(DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID)) {
+					        appointmentScheduledDate = obs.getValueDatetime();
+					        break;
+				        }
+			        }
+			        
+			        if (appointmentScheduledDate != null) {
+				        LocalDate today = LocalDate.now();
+				        LocalDate scheduledDate = appointmentScheduledDate.toInstant().atZone(ZoneId.systemDefault())
+				                .toLocalDate();
+				        long diffInDays = ChronoUnit.DAYS.between(scheduledDate, today);
+				        
+				        return diffInDays > 28;
+			        }
+			        return false;
+		        }).collect(Collectors.toCollection(HashSet::new));
+		
+		return generatePatientListObj(missedAppointmentPatientsFiltered, endDate);
 	}
 	
-	private static boolean determineIfPatientIsOnAppointment(Patient patient) {
-		return Math.random() < 0.5;
-		// TODO: Add logic to determine if patient was on appointment
-		// return false;
+	private static boolean determineIfPatientMissedAppointment(Patient patient, Date endDate) {
+		List<Concept> missedAppointmentConcept = new ArrayList<>();
+		missedAppointmentConcept.add(Context.getConceptService().getConceptByUuid(DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID));
+		
+		List<Obs> obsList = Context.getObsService().getObservations(Collections.singletonList(patient), null,
+		    missedAppointmentConcept, null, null, null, null, null, null, null, endDate, false);
+		
+		if (!obsList.isEmpty()) {
+			Date appointmentScheduledDate = null;
+			for (Obs obs : obsList) {
+				if (obs.getPerson().equals(patient)
+				        && obs.getConcept().getUuid().equals(DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID)) {
+					appointmentScheduledDate = obs.getValueDatetime();
+					break;
+				}
+			}
+			
+			if (appointmentScheduledDate != null) {
+				LocalDate today = LocalDate.now();
+				LocalDate scheduledDate = appointmentScheduledDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+				long diffInDays = ChronoUnit.DAYS.between(scheduledDate, today);
+				
+				return diffInDays > 28;
+			}
+		}
+		return !obsList.isEmpty();
+	}
+	
+	/**
+	 * Returns a list of patients on appointment.
+	 * 
+	 * @return A JSON representation of the list of patients on appointment, including summary
+	 *         information about each patient.
+	 */
+	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/onAppointment")
+	@ResponseBody
+	public Object getPatientsOnAppointment(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
+	        @RequestParam("endDate") String qEndDate,
+	        @RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
+		Date startDate = dateTimeFormatter.parse(qStartDate);
+		Date endDate = dateTimeFormatter.parse(qEndDate);
+		
+		List<String> onAppointmentencounterTypeUuids = Collections.singletonList(FOLLOW_UP_FORM_ENCOUNTER_TYPE);
+		
+		List<Encounter> onAppointmentEncounters = getEncountersByEncounterTypes(onAppointmentencounterTypeUuids, startDate,
+		    endDate);
+		
+		List<Obs> onAppointmentObs = Context.getObsService().getObservations(null, onAppointmentEncounters,
+		    Collections.singletonList(Context.getConceptService().getConceptByUuid(DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID)),
+		    null, null, null, null, null, null, null, endDate, false);
+		
+		HashSet<Patient> onAppointmentPatientsFiltered = onAppointmentObs.stream()
+		        .filter(obs -> obs.getPerson() instanceof Patient).map(obs -> (Patient) obs.getPerson()).filter(patient -> {
+			        Date appointmentScheduledDate = null;
+			        for (Obs obs : onAppointmentObs) {
+				        if (obs.getPerson().equals(patient)
+				                && obs.getConcept().getUuid().equals(DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID)) {
+					        appointmentScheduledDate = obs.getValueDatetime();
+					        break;
+				        }
+			        }
+			        
+			        if (appointmentScheduledDate != null) {
+				        LocalDate today = LocalDate.now();
+				        LocalDate scheduledDate = appointmentScheduledDate.toInstant().atZone(ZoneId.systemDefault())
+				                .toLocalDate();
+				        long diffInDays = ChronoUnit.DAYS.between(scheduledDate, today);
+				        
+				        return diffInDays <= 28;
+			        }
+			        return false;
+		        }).collect(Collectors.toCollection(HashSet::new));
+		
+		return generatePatientListObj(onAppointmentPatientsFiltered, endDate);
+	}
+	
+	private static boolean determineIfPatientIsOnAppointment(Patient patient, Date endDate) {
+		List<Concept> onAppointmentConcept = new ArrayList<>();
+		onAppointmentConcept.add(Context.getConceptService().getConceptByUuid(DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID));
+		
+		List<Obs> obsList = Context.getObsService().getObservations(Collections.singletonList(patient), null,
+		    onAppointmentConcept, null, null, null, null, null, null, null, endDate, false);
+		
+		if (!obsList.isEmpty()) {
+			Date appointmentScheduledDate = null;
+			for (Obs obs : obsList) {
+				if (obs.getPerson().equals(patient)
+				        && obs.getConcept().getUuid().equals(DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID)) {
+					appointmentScheduledDate = obs.getValueDatetime();
+					break;
+				}
+			}
+			
+			if (appointmentScheduledDate != null) {
+				LocalDate today = LocalDate.now();
+				LocalDate scheduledDate = appointmentScheduledDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+				long diffInDays = ChronoUnit.DAYS.between(scheduledDate, today);
+				
+				return diffInDays <= 28;
+			}
+		}
+		return !obsList.isEmpty();
 	}
 	
 	/**
