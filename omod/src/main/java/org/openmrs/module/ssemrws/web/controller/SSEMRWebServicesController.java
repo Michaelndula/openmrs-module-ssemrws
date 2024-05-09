@@ -553,7 +553,7 @@ public class SSEMRWebServicesController {
 				                .toLocalDate();
 				        long diffInDays = ChronoUnit.DAYS.between(scheduledDate, today);
 
-						return diffInDays >= 1 && diffInDays <= 28;
+						return diffInDays >= 1 && diffInDays < 28;
 			        }
 			        return false;
 		        }).collect(Collectors.toCollection(HashSet::new));
@@ -583,7 +583,7 @@ public class SSEMRWebServicesController {
 				LocalDate scheduledDate = appointmentScheduledDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
 				long diffInDays = ChronoUnit.DAYS.between(scheduledDate, today);
 
-				return diffInDays >= 1 && diffInDays <= 28;
+				return diffInDays >= 1 && diffInDays < 28;
 			}
 		}
 		return !obsList.isEmpty();
