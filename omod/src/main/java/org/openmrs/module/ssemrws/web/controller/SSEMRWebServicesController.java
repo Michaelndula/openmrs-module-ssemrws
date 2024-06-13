@@ -209,17 +209,16 @@ public class SSEMRWebServicesController {
 	public Object getPatientsOnAdultRegimenTreatment(HttpServletRequest request) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		// Add logic to filter patients on Adult regimen treatment
-		
+
 		return generatePatientListObj((HashSet<Patient>) allPatients);
 	}
-	
+
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/childRegimenTreatment")
 	// gets all visit forms for a patient
 	@ResponseBody
 	public Object getPatientsOnChildRegimenTreatment(HttpServletRequest request) {
 		List<Patient> allPatients = Context.getPatientService().getAllPatients(false);
 		// Add logic to filter patients on Child regimen treatment
-		
 		return generatePatientListObj((HashSet<Patient>) allPatients);
 	}
 	
