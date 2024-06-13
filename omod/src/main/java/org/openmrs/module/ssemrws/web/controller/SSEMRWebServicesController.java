@@ -176,6 +176,7 @@ public class SSEMRWebServicesController {
 	public static final String regimen_5I = "50b60d77-186d-4a0d-8784-659ee2d60ec9";
 	
 	public static final String regimen_5J = "78e49624-0e33-4374-93b7-60b132b26dae";
+
 	
 	private static final double THRESHOLD = 1000.0;
 	
@@ -291,6 +292,7 @@ public class SSEMRWebServicesController {
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/adultRegimenTreatment")
+	// gets all visit forms for a patient
 	@ResponseBody
 	public Object getPatientsOnAdultRegimenTreatment(HttpServletRequest request,
 	        @RequestParam("startDate") String qStartDate, @RequestParam("endDate") String qEndDate,
@@ -304,6 +306,7 @@ public class SSEMRWebServicesController {
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/childRegimenTreatment")
+	// gets all visit forms for a patient
 	@ResponseBody
 	public Object getPatientsOnChildRegimenTreatment(HttpServletRequest request,
 	        @RequestParam("startDate") String qStartDate, @RequestParam("endDate") String qEndDate,
