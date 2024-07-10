@@ -26,6 +26,7 @@ import org.codehaus.jackson.node.JsonNodeFactory;
 import org.codehaus.jackson.node.ObjectNode;
 import org.openmrs.*;
 import org.openmrs.api.APIException;
+import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
 import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.openmrs.parameter.EncounterSearchCriteria;
@@ -826,6 +827,29 @@ public class SSEMRWebServicesController {
 		}
 		return "";
 		
+	}
+
+	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/transferredIn")
+	@ResponseBody
+	public Object getTransferredInPatients(HttpServletRequest request, @RequestParam("startDate") String qStartDate,
+										   @RequestParam("endDate") String qEndDate,
+										   @RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
+
+		Date startDate = dateTimeFormatter.parse(qStartDate);
+		Date endDate = dateTimeFormatter.parse(qEndDate);
+
+		HashSet<Patient> transferredInPatients = getTransferredInPatients();
+		return generatePatientListObj(transferredInPatients, startDate, endDate);
+	}
+
+	public static HashSet<Patient> getTransferredInPatients() {
+		PatientService patientService = Context.getPatientService();
+		List<Patient> allPatients = patientService.getAllPatients();
+
+		return allPatients.stream()
+				.filter(patient -> patient.getIdentifiers().stream()
+						.anyMatch(identifier -> identifier.getIdentifier().startsWith("TI-")))
+				.collect(Collectors.toCollection(HashSet::new));
 	}
 	
 	private Object generateViralLoadListObj(List<Patient> allPatients) {
