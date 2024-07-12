@@ -467,12 +467,20 @@ public class SSEMRWebServicesController {
 		Date birthdate = patient.getBirthdate();
 		Date currentDate = new Date();
 		long age = (currentDate.getTime() - birthdate.getTime()) / (1000L * 60 * 60 * 24 * 365);
+		String contact = patient.getAttribute("Client Telephone Number") != null
+				? String.valueOf(patient.getAttribute("Client Telephone Number"))
+				: "";
+		String alternateContact = patient.getAttribute("AltTelephoneNo") != null
+				? String.valueOf(patient.getAttribute("AltTelephoneNo"))
+				: "";
 		
 		patientObj.put("uuid", patient.getUuid());
 		patientObj.put("name", patient.getPersonName() != null ? patient.getPersonName().toString() : "");
 		patientObj.put("identifier",
 		    patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().toString() : "");
 		patientObj.put("sex", patient.getGender());
+		patientObj.put("contact", contact);
+		patientObj.put("alternateContact", alternateContact);
 		patientObj.put("dateEnrolled", dateEnrolled);
 		patientObj.put("lastRefillDate", lastRefillDate);
 		patientObj.put("newClient", determineIfPatientIsNewClient(patient, startDate, endDate));
