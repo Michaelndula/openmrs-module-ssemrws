@@ -467,11 +467,18 @@ public class SSEMRWebServicesController {
 		Date birthdate = patient.getBirthdate();
 		Date currentDate = new Date();
 		long age = (currentDate.getTime() - birthdate.getTime()) / (1000L * 60 * 60 * 24 * 365);
+
+		ArrayNode identifiersArray = JsonNodeFactory.instance.arrayNode();
+		for (PatientIdentifier identifier : patient.getIdentifiers()) {
+			ObjectNode identifierObj = JsonNodeFactory.instance.objectNode();
+			identifierObj.put("identifier", identifier.getIdentifier());
+			identifierObj.put("identifierType", identifier.getIdentifierType().getName());
+			identifiersArray.add(identifierObj);
+		}
 		
 		patientObj.put("uuid", patient.getUuid());
 		patientObj.put("name", patient.getPersonName() != null ? patient.getPersonName().toString() : "");
-		patientObj.put("identifier",
-		    patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().toString() : "");
+		patientObj.put("identifiers", identifiersArray);
 		patientObj.put("sex", patient.getGender());
 		patientObj.put("dateEnrolled", dateEnrolled);
 		patientObj.put("lastRefillDate", lastRefillDate);
