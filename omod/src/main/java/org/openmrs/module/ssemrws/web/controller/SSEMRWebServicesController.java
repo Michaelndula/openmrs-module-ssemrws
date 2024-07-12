@@ -457,34 +457,69 @@ public class SSEMRWebServicesController {
 		
 		return allPatientsObj.toString();
 	}
-	
-	private static ObjectNode generatePatientObject(Date endDate, filterCategory filterCategory, Patient patient) {
+
+	private static ObjectNode generatePatientObject(Date startDate, Date endDate, filterCategory filterCategory,
+													Patient patient) {
 		ObjectNode patientObj = JsonNodeFactory.instance.objectNode();
-		Date startDate = new Date();
-		String dateEnrolled = determineEnrolmentDate(patient, startDate, endDate);
-		String lastRefillDate = getLastRefillDate(patient, startDate, endDate);
+		String dateEnrolled = getEnrolmentDate(patient);
+		String lastRefillDate = getLastRefillDate(patient);
+		String artRegimen = getARTRegimen(patient);
+		String artInitiationDate = getArtInitiationDate(patient);
+		String contact = patient.getAttribute("Client Telephone Number") != null
+				? String.valueOf(patient.getAttribute("Client Telephone Number"))
+				: "";
+		String alternateContact = patient.getAttribute("AltTelephoneNo") != null
+				? String.valueOf(patient.getAttribute("AltTelephoneNo"))
+				: "";
 		// Calculate age in years based on patient's birthdate and current date
 		Date birthdate = patient.getBirthdate();
 		Date currentDate = new Date();
 		long age = (currentDate.getTime() - birthdate.getTime()) / (1000L * 60 * 60 * 24 * 365);
-		
+
+		ArrayNode identifiersArray = JsonNodeFactory.instance.arrayNode();
+		for (PatientIdentifier identifier : patient.getIdentifiers()) {
+			ObjectNode identifierObj = JsonNodeFactory.instance.objectNode();
+			identifierObj.put("identifier", identifier.getIdentifier());
+			identifierObj.put("identifierType", identifier.getIdentifierType().getName());
+			identifiersArray.add(identifierObj);
+		}
+
+		String village = "";
+		String landmark = "";
+		for (PersonAddress address : patient.getAddresses()) {
+			if (address.getAddress5() != null) {
+				village = address.getAddress5();
+			}
+			if (address.getAddress6() != null) {
+				landmark = address.getAddress6();
+			}
+		}
+		String fullAddress = "Village: " + village + ", Landmark: " + landmark;
+
+		ClinicalStatus clinicalStatus = determineClinicalStatus(patient, startDate, endDate);
+
 		patientObj.put("uuid", patient.getUuid());
-		patientObj.put("name", patient.getPersonName() != null ? patient.getPersonName().toString() : "");
-		patientObj.put("identifier",
-		    patient.getPatientIdentifier() != null ? patient.getPatientIdentifier().toString() : "");
 		patientObj.put("sex", patient.getGender());
+		patientObj.put("age", age);
+		patientObj.put("identifiers", identifiersArray);
+		patientObj.put("address", fullAddress);
+		patientObj.put("contact", contact);
+		patientObj.put("alternateContact", alternateContact);
 		patientObj.put("dateEnrolled", dateEnrolled);
 		patientObj.put("lastRefillDate", lastRefillDate);
-		patientObj.put("newClient", determineIfPatientIsNewClient(patient, startDate, endDate));
+		patientObj.put("ARTRegimen", artRegimen);
+		patientObj.put("initiationDate", artInitiationDate);
+		patientObj.put("clinicalStatus", clinicalStatus.toString());
+		patientObj.put("newClient", newlyEnrolledOnArt(patient));
 		patientObj.put("childOrAdolescent", age <= 19 ? true : false);
 		patientObj.put("pregnantAndBreastfeeding", determineIfPatientIsPregnantOrBreastfeeding(patient, endDate));
-		patientObj.put("IIT", determineIfPatientIsIIT(patient, endDate));
-		patientObj.put("returningToTreatment", determineIfPatientIsReturningToTreatment(patient, endDate));
-		patientObj.put("dueForVl", determineIfPatientIsDueForVl(patient));
-		patientObj.put("highVl", determineIfPatientIsHighVl(patient, endDate));
+		patientObj.put("IIT", determineIfPatientIsIIT(patient, startDate, endDate));
+		patientObj.put("returningToTreatment", determineIfPatientIsReturningToTreatment(patient));
+		patientObj.put("dueForVl", isPatientDueForVl(patient, startDate, endDate));
+		patientObj.put("highVl", determineIfPatientIsHighVl(patient));
 		patientObj.put("onAppointment", determineIfPatientIsOnAppointment(patient));
 		patientObj.put("missedAppointment", determineIfPatientMissedAppointment(patient));
-		
+
 		// check filter category and filter patients based on the category
 		if (filterCategory != null) {
 			switch (filterCategory) {
@@ -499,12 +534,7 @@ public class SSEMRWebServicesController {
 					}
 					break;
 				case IIT:
-					if (determineIfPatientIsIIT(patient, endDate)) {
-						return patientObj;
-					}
-					break;
-				case RETURN_TO_TREATMENT:
-					if (determineIfPatientIsReturningToTreatment(patient, endDate)) {
+					if (determineIfPatientIsIIT(patient, startDate, endDate)) {
 						return patientObj;
 					}
 			}
