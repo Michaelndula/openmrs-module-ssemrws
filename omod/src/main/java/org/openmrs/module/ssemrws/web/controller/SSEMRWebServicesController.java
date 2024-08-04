@@ -28,6 +28,7 @@ import org.openmrs.*;
 import org.openmrs.api.APIException;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.ssemrws.web.dto.PatientObservations;
 import org.openmrs.module.webservices.rest.web.RestConstants;
 import org.openmrs.parameter.EncounterSearchCriteria;
 import org.springframework.http.HttpHeaders;
@@ -857,6 +858,64 @@ public class SSEMRWebServicesController {
 				.filter(patient -> patient.getIdentifiers().stream()
 						.anyMatch(identifier -> identifier.getIdentifier().startsWith("TI-")))
 				.collect(Collectors.toCollection(HashSet::new));
+	}
+
+	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/obs")
+	@ResponseBody
+	public ResponseEntity<Object> getPatientObs(HttpServletRequest request, @RequestParam("patientUuid") String patientUuid,
+												@RequestParam(required = false, value = "filter") filterCategory filterCategory) throws ParseException {
+
+		if (StringUtils.isBlank(patientUuid)) {
+			return new ResponseEntity<>("You must specify patientUuid in the request!", new HttpHeaders(),
+					HttpStatus.BAD_REQUEST);
+		}
+
+		Patient patient = Context.getPatientService().getPatientByUuid(patientUuid);
+
+		if (patient == null) {
+			return new ResponseEntity<>("The provided patient was not found in the system!", new HttpHeaders(),
+					HttpStatus.NOT_FOUND);
+		}
+
+		PatientObservations observations = new PatientObservations();
+
+		observations.setEnrollmentDate(getEnrolmentDate(patient));
+		observations.setDateOfinitiation(getArtInitiationDate(patient));
+		observations.setLastRefillDate(getLastRefillDate(patient));
+		observations.setArvRegimen(getARTRegimen(patient));
+		observations.setLastCD4Count(getLastCD4Count(patient));
+		observations.setTbStatus(getTbStatus(patient));
+		observations.setArvRegimenDose(getARVRegimenDose(patient));
+		observations.setWhoClinicalStage(getWHOClinicalStage(patient));
+		observations.setDateVLResultsReceived(getDateVLResultsReceived(patient));
+		observations.setChwName(getCHWName(patient));
+		observations.setChwPhone(getCHWPhone(patient));
+		observations.setChwAddress(getCHWAddress(patient));
+		observations.setVlResults(getVLResults(patient));
+		observations.setBmiMuac(getBMIMUAC(patient));
+
+		List<Map<String, String>> identifiersList = new ArrayList<>();
+		for (PatientIdentifier identifier : patient.getIdentifiers()) {
+			Map<String, String> identifierObj = new HashMap<>();
+			identifierObj.put("identifier", identifier.getIdentifier().trim());
+			identifierObj.put("identifierType", identifier.getIdentifierType().getName().trim());
+			identifiersList.add(identifierObj);
+		}
+		Date birthdate = patient.getBirthdate();
+		String formattedBirthDate = dateTimeFormatter.format(birthdate);
+		Date currentDate = new Date();
+		long age = (currentDate.getTime() - birthdate.getTime()) / (1000L * 60 * 60 * 24 * 365);
+
+		Map<String, Object> responseMap = new LinkedHashMap<>();
+		responseMap.put("Name", patient.getPersonName() != null ? patient.getPersonName().toString() : "");
+		responseMap.put("uuid", patient.getUuid());
+		responseMap.put("age", age);
+		responseMap.put("birthdate", formattedBirthDate);
+		responseMap.put("sex", patient.getGender());
+		responseMap.put("Identifiers", identifiersList);
+		responseMap.put("results", Collections.singletonList(observations));
+
+		return new ResponseEntity<>(responseMap, new HttpHeaders(), HttpStatus.OK);
 	}
 	
 	private Object generateViralLoadListObj(List<Patient> allPatients) {
