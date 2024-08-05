@@ -861,23 +861,29 @@ public class SSEMRWebServicesController {
 				.collect(Collectors.toCollection(HashSet::new));
 	}
 
-	private static Double getBMIMUAC(Patient patient) {
+	private static Double getBMI(Patient patient) {
 		List<Obs> bmiObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
 				Collections.singletonList(Context.getConceptService().getConceptByUuid(BMI_CONCEPT_UUID)), null, null, null,
 				null, 1, null, null, null, false);
 
+		if (!bmiObs.isEmpty()) {
+			Obs bmiObservation = bmiObs.get(0);
+			return bmiObservation.getValueNumeric();
+		}
+
+		return null;
+	}
+
+	private static Double getMUAC(Patient patient) {
 		List<Obs> muacObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
 				Collections.singletonList(Context.getConceptService().getConceptByUuid(MUAC_CONCEPT_UUID)), null, null, null,
 				null, 1, null, null, null, false);
 
-		List<Obs> bmiMuacObservations = new ArrayList<>();
-		bmiMuacObservations.addAll(bmiObs);
-		bmiMuacObservations.addAll(muacObs);
-
-		if (!bmiMuacObservations.isEmpty()) {
-			Obs bmiMuacObs = bmiMuacObservations.get(0);
-			return bmiMuacObs.getValueNumeric();
+		if (!muacObs.isEmpty()) {
+			Obs muacObservation = muacObs.get(0);
+			return muacObservation.getValueNumeric();
 		}
+
 		return null;
 	}
 	
