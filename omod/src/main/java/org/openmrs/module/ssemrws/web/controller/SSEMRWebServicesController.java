@@ -91,8 +91,10 @@ public class SSEMRWebServicesController {
 	private static final String CURRENTLY_PREGNANT_CONCEPT_UUID = "235a6246-6179-4309-ba84-6f0ec337eb48";
 	
 	public static final String CONCEPT_BY_UUID = "78763e68-104e-465d-8ce3-35f9edfb083d";
-	
-	public static final String TELEPHONE_NUMBER_UUID = "8f0a2a16-c073-4622-88ad-a11f2d6966ad";
+
+	public static final String BMI_CONCEPT_UUID = "1342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+	public static final String MUAC_CONCEPT_UUID = "1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	
 	private static final double THRESHOLD = 1000.0;
 	
@@ -857,6 +859,26 @@ public class SSEMRWebServicesController {
 				.filter(patient -> patient.getIdentifiers().stream()
 						.anyMatch(identifier -> identifier.getIdentifier().startsWith("TI-")))
 				.collect(Collectors.toCollection(HashSet::new));
+	}
+
+	private static Double getBMIMUAC(Patient patient) {
+		List<Obs> bmiObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
+				Collections.singletonList(Context.getConceptService().getConceptByUuid(BMI_CONCEPT_UUID)), null, null, null,
+				null, 1, null, null, null, false);
+
+		List<Obs> muacObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
+				Collections.singletonList(Context.getConceptService().getConceptByUuid(MUAC_CONCEPT_UUID)), null, null, null,
+				null, 1, null, null, null, false);
+
+		List<Obs> bmiMuacObservations = new ArrayList<>();
+		bmiMuacObservations.addAll(bmiObs);
+		bmiMuacObservations.addAll(muacObs);
+
+		if (!bmiMuacObservations.isEmpty()) {
+			Obs bmiMuacObs = bmiMuacObservations.get(0);
+			return bmiMuacObs.getValueNumeric();
+		}
+		return null;
 	}
 	
 	private Object generateViralLoadListObj(List<Patient> allPatients) {
