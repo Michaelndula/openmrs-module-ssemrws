@@ -95,6 +95,10 @@ public class SSEMRWebServicesController {
 	public static final String TELEPHONE_NUMBER_UUID = "8f0a2a16-c073-4622-88ad-a11f2d6966ad";
 
 	public static final String DATE_VL_RESULTS_RECEIVED_UUID = "80e34f1b-26e8-49ea-9b6e-d7d903a91e26";
+
+	public static final String BMI_CONCEPT_UUID = "1342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+
+	public static final String MUAC_CONCEPT_UUID = "1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 	
 	private static final double THRESHOLD = 1000.0;
 	
@@ -879,7 +883,32 @@ public class SSEMRWebServicesController {
 	}
 
 
+	private static Double getBMI(Patient patient) {
+		List<Obs> bmiObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
+				Collections.singletonList(Context.getConceptService().getConceptByUuid(BMI_CONCEPT_UUID)), null, null, null,
+				null, 1, null, null, null, false);
 
+		if (!bmiObs.isEmpty()) {
+			Obs bmiObservation = bmiObs.get(0);
+			return bmiObservation.getValueNumeric();
+		}
+
+		return null;
+	}
+
+	private static Double getMUAC(Patient patient) {
+		List<Obs> muacObs = Context.getObsService().getObservations(Collections.singletonList(patient.getPerson()), null,
+				Collections.singletonList(Context.getConceptService().getConceptByUuid(MUAC_CONCEPT_UUID)), null, null, null,
+				null, 1, null, null, null, false);
+
+		if (!muacObs.isEmpty()) {
+			Obs muacObservation = muacObs.get(0);
+			return muacObservation.getValueNumeric();
+		}
+
+		return null;
+  }
+  
 	private Object generateViralLoadListObj(List<Patient> allPatients) {
 		// The expected output for this method should resemble this JSON output
 		// [{
