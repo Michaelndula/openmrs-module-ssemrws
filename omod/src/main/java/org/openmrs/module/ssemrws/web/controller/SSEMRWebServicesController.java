@@ -93,6 +93,8 @@ public class SSEMRWebServicesController {
 	public static final String CONCEPT_BY_UUID = "78763e68-104e-465d-8ce3-35f9edfb083d";
 	
 	public static final String TELEPHONE_NUMBER_UUID = "8f0a2a16-c073-4622-88ad-a11f2d6966ad";
+
+	public static final String DATE_VL_RESULTS_RECEIVED_UUID = "80e34f1b-26e8-49ea-9b6e-d7d903a91e26";
 	
 	private static final double THRESHOLD = 1000.0;
 	
@@ -858,7 +860,26 @@ public class SSEMRWebServicesController {
 						.anyMatch(identifier -> identifier.getIdentifier().startsWith("TI-")))
 				.collect(Collectors.toCollection(HashSet::new));
 	}
-	
+
+	private static String getDateVLResultsReceived(Patient patient) {
+		Concept dateVLResultsReceivedConcept = Context.getConceptService().getConceptByUuid(DATE_VL_RESULTS_RECEIVED_UUID);
+
+		List<Obs> dateVLResultsReceivedObs = Context.getObsService().getObservations(
+				Collections.singletonList(patient.getPerson()), null, Collections.singletonList(dateVLResultsReceivedConcept),
+				null, null, null, null, null, null, null, null, false);
+
+		if (!dateVLResultsReceivedObs.isEmpty()) {
+			Obs dateVLReceivedObs = dateVLResultsReceivedObs.get(0);
+			Date dateVLResultsReceived = dateVLReceivedObs.getValueDate();
+			if (dateVLResultsReceived != null) {
+				return dateTimeFormatter.format(dateVLResultsReceived);
+			}
+		}
+		return "";
+	}
+
+
+
 	private Object generateViralLoadListObj(List<Patient> allPatients) {
 		// The expected output for this method should resemble this JSON output
 		// [{
