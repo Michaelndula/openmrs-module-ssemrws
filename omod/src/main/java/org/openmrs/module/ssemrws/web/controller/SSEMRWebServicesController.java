@@ -31,6 +31,9 @@ import org.codehaus.jackson.node.ObjectNode;
 import org.openmrs.*;
 import org.openmrs.api.PatientService;
 import org.openmrs.api.context.Context;
+//import org.openmrs.module.ssemrws.CoreContext;
+//import org.openmrs.module.ssemrws.form.FormDescriptor;
+//import org.openmrs.module.ssemrws.form.FormManager;
 import org.openmrs.module.ssemrws.web.dto.AppointmentDTO;
 import org.openmrs.module.ssemrws.web.dto.PatientObservations;
 import org.openmrs.module.webservices.rest.web.RestConstants;
@@ -44,6 +47,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import static org.openmrs.module.ssemrws.web.constants.Concepts.*;
+import static org.openmrs.module.ssemrws.web.constants.RegimenConcepts.*;
+
 /**
  * This class configured as controller using annotation and mapped with the URL of
  * 'module/${rootArtifactid}/${rootArtifactid}Link.form'.
@@ -51,180 +57,6 @@ import org.springframework.web.bind.annotation.ResponseBody;
 @Controller
 @RequestMapping(value = "/rest/" + RestConstants.VERSION_1 + "/ssemr")
 public class SSEMRWebServicesController {
-	
-	public static final String VL_LAB_REQUEST_ENCOUNTER_TYPE = "82024e00-3f10-11e4-adec-0800271c1b75";
-	
-	public static final String FOLLOW_UP_FORM_ENCOUNTER_TYPE = "e8481555-9dd1-4bb5-ba8c-cb721dafb166";
-	
-	public static final String PERSONAL_FAMILY_HISTORY_ENCOUNTERTYPE_UUID = "0e9f540d-92cb-43c9-a95c-9407f5bf3f2a";
-	
-	public static final String SAMPLE_COLLECTION_DATE_UUID = "ed520e2d-acb4-4ea9-8ae5-16ca27ace96d";
-	
-	public static final String YES_CONCEPT = "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	
-	public static final String LAST_REFILL_DATE_UUID = "494915d8-4cf3-4c24-9efa-371710992cb3";
-	
-	public static final String VIRAL_LOAD_CONCEPT_UUID = "01c3ce55-b7eb-45f5-93d5-bace353e3cfd";
-	
-	public static final String RETURNING_TO_TREATMENT_UUID = "4913c7f0-3362-4407-8d48-4b115f2f59dd";
-	
-	public static final String DATE_INTERRUPTION_IN_TREATMENT_CONCEPT_UUID = "84c23dc4-40f4-4d9a-a2f5-ebeb4b4f3250";
-	
-	public static final String DATE_OF_LAST_VISIT_CONCEPT_UUID = "773cd838-7b21-4f34-9b33-0a071140f817";
-	
-	public static final String ART_TREATMENT_INTURRUPTION_ENCOUNTER_TYPE_UUID = "81852aee-3f10-11e4-adec-0800271c1b75";
-	
-	public static final String ACTIVE_REGIMEN_CONCEPT_UUID = "23322fd6-3dbb-410e-8bee-6210dfcd5f71";
-	
-	public static final String COMMUNITY_LINKAGE_ENCOUNTER_UUID = "3c2df02e-6856-11ee-8c99-0242ac120002";
-	
-	public static final String DATE_OF_ENROLLMENT_UUID = "e27f8561-e242-4744-9193-b84d752dd86d";
-	
-	public static final String DATE_APPOINTMENT_SCHEDULED_CONCEPT_UUID = "e605731b-2e81-41a9-8446-2ed442c339e2";
-	
-	public static final String PEDIATRIC_INTAKE_FORM = "356def6a-fa66-4a78-97d5-b43154064875";
-	
-	public static final String ADULT_AND_ADOLESCENT_INTAKE_FORM = "b645dbdd-7d58-41d4-9b11-eeff023b8ee5";
-	
-	public static final String regimen_1A = "9062c6d9-a650-44d2-8929-da84f617c427";
-	
-	public static final String regimen_1B = "c22e6700-a937-4909-b4ad-e82ff51325ac";
-	
-	public static final String regimen_1C = "a00d9620-e88b-4c2f-9293-b1ac9e5943f2";
-	
-	public static final String regimen_1D = "5d500ca2-350a-49ee-a3d4-f340db32ff31";
-	
-	public static final String regimen_1E = "3fd242a8-7ade-463c-8919-d82573ea8526";
-	
-	public static final String regimen_1F = "91f5d0d6-eb81-484f-9376-4bfb926a5a81";
-	
-	public static final String regimen_1G = "0dd3e78f-e1fc-47de-95bc-1f489d0dfcc5";
-	
-	public static final String regimen_1H = "4a86fbee-07a9-422a-bf69-16256c0c2b8b";
-	
-	public static final String regimen_1J = "03224cae-f115-4814-bd53-c99c72288446";
-	
-	public static final String regimen_2A = "bd97cacd-4a91-4901-8803-3a4a2e5f1ca8";
-	
-	public static final String regimen_2B = "ad6ff4ef-769e-4aec-b8bb-7f033fe6aaaa";
-	
-	public static final String regimen_2C = "47167ec1-4957-4d0a-a58c-3894bdeb93ff";
-	
-	public static final String regimen_2D = "e649a0ec-e193-4af0-bb49-02687107a893";
-	
-	public static final String regimen_2E = "accca537-b8ee-41ec-b902-7de814d099b2";
-	
-	public static final String regimen_2F = "77f201fc-aefc-4068-baa7-cb3284782a38";
-	
-	public static final String regimen_2G = "cb0f9fcd-fb52-493f-95aa-d0197387fbdb";
-	
-	public static final String regimen_2H = "28790bde-81db-4490-806b-ac10c17b41dc";
-	
-	public static final String regimen_2I = "aae69cae-2806-4e8b-a916-f22ed733a19b";
-	
-	public static final String regimen_2J = "64336206-c9bc-4d37-accf-c7abac7a37f6";
-	
-	public static final String regimen_2K = "25f0cca5-902d-4e36-9e4f-5ce5da744a75";
-	
-	public static final String regimen_4A = "c224b116-27ec-4156-93ba-d4838a3ac1c0";
-	
-	public static final String regimen_4B = "5efe8d99-c65e-4136-8820-5f3646437ff7";
-	
-	public static final String regimen_4C = "f8f64be8-ccb4-404d-b99e-3c4975155da5";
-	
-	public static final String regimen_4D = "28c5d192-ba71-4ef5-8604-ecf6bd177126";
-	
-	public static final String regimen_4E = "3eaf04dc-e284-42f7-860e-02cda37cf230";
-	
-	public static final String regimen_4F = "0372f3fb-5e8a-474f-8250-01af7a485778";
-	
-	public static final String regimen_4G = "ce2412c4-a041-4328-bfaa-35e041ca4802";
-	
-	public static final String regimen_4H = "6ed47806-8809-4c5a-a1b6-fe2ec0158563";
-	
-	public static final String regimen_4I = "f6b1c6ea-b0a2-46a0-b7e0-3038d268356c";
-	
-	public static final String regimen_4J = "2e1ab9d3-7fe1-48ba-a12c-fd8d26bc161d";
-	
-	public static final String regimen_4K = "99f54f96-e761-4d86-bb1b-0abc2a24fa16";
-	
-	public static final String regimen_4L = "5287f2a4-23e5-4314-b60c-0a4b91753ec6";
-	
-	public static final String regimen_5A = "b23cf614-dfec-48c9-a12f-ba577e28347d";
-	
-	public static final String regimen_5B = "dabc93c3-8c3d-41e1-b3e3-d7e14c4765b6";
-	
-	public static final String regimen_5C = "da3c6710-c431-4582-a444-a466d54693ec";
-	
-	public static final String regimen_5D = "6c383d11-2b29-4cc2-bfa4-811ff7a988f1";
-	
-	public static final String regimen_5E = "82725d14-00c6-4864-bf8b-ad5db0b3c3fa";
-	
-	public static final String regimen_5F = "140ede93-5691-463b-9d17-2dc8834621f8";
-	
-	public static final String regimen_5G = "06017ac1-2ce8-4689-a3bf-4e9f3d54978f";
-	
-	public static final String regimen_5H = "2c0a5b91-7b2a-4f8e-86fd-a8007841fca8";
-	
-	public static final String regimen_5I = "50b60d77-186d-4a0d-8784-659ee2d60ec9";
-	
-	public static final String regimen_5J = "78e49624-0e33-4374-93b7-60b132b26dae";
-	
-	public static final String HIGH_VL_ENCOUNTERTYPE_UUID = "f7f1c854-69e5-11ee-8c99-0242ac120002";
-	
-	public static final String BREASTFEEDING_CONCEPT_UUID = "cf5c7deb-f67c-4406-82ea-d619e502f47c";
-	
-	public static final String PREGNANT_CONCEPT_UUID = "5dcb1bc9-ee89-4b57-9493-a1f245c5ee8b";
-	
-	public static final String PMTCT_CONCEPT_UUID = "da20f4fc-94b4-421c-896c-cf16a834227a";
-	
-	public static final String EAC_SESSION_CONCEPT_UUID = "65536958-fc01-4002-8839-af4b6ab0489b";
-	
-	public static final String EXTENDED_EAC_CONCEPT_UUID = "99c7c0f1-3c7c-4e26-bf4b-60a74734bc7c";
-	
-	public static final String VIRAL_LOAD_RESULTS_UUID = "8b5ef5c4-3c88-49b8-87e5-cb8d30caa77d";
-	
-	public static final String FIRST_EAC_SESSION = "37f1e487-24f7-48f3-a347-391e877152e4";
-	
-	public static final String SECOND_EAC_SESSION = "348c5147-4e54-420a-a035-b322e1ba0b6e";
-	
-	public static final String THIRD_EAC_SESSION = "60966dae-3999-42b9-aec1-6161cebb22c1";
-	
-	public static final String REAPEAT_VL_COLLECTION = "06cee3e6-daaa-48cf-aa53-296254ee61a3";
-	
-	public static final String REPEAT_VL_RESULTS = "68c60487-62b5-45af-9773-0bc163b9e076";
-	
-	public static final String END_OF_FOLLOW_UP_ENCOUTERTYPE_UUID = "3bf40d2b-c8a2-4a7d-9da2-adb33860e0f8";
-	
-	public static final String TRANSFERRED_OUT_CONCEPT_UUID = "68f68ae1-272c-44e4-85af-009e46e60015";
-	
-	public static final String DATE_OF_ART_INITIATION_CONCEPT_UUID = "e27f8561-e242-4744-9193-b84d752dd86d";
-	
-	public static final String DECEASED_CONCEPT_UUID = "417b7273-8d62-4720-9fb6-075e9d1530ec";
-	
-	public static final String LAST_CD4_COUNT_UUID = "809dd0f5-ce54-441c-b835-a2a8b06a6140";
-	
-	public static final String TB_STATUS_CONCEPT_UUID = "9a1a731e-937b-46fe-aca2-acf83a326b71";
-	
-	public static final String ARV_REGIMEN_DOSE_UUID = "3fa33347-9871-497b-81f3-7a791b9f4bae";
-	
-	public static final String WHO_CLINICAL_UUID = "e38e6ce2-92d9-4382-927b-5555ff9fa850";
-	
-	public static final String DATE_VL_RESULTS_RECEIVED_UUID = "80e34f1b-26e8-49ea-9b6e-d7d903a91e26";
-	
-	public static final String CHW_NAME_UUID = "5b258179-1872-4339-8b29-5ecf618bd4d3";
-	
-	public static final String CHW_PHONE_UUID = "cb3385ee-18c3-4856-a410-c7b4d105a779";
-	
-	public static final String CHW_ADDRESS_UUID = "77a35b01-7713-437a-a82b-7f74c75ea41d";
-	
-	public static final String BDL_CONCEPT_UUID = "62df0577-a1f7-493e-80d2-e458998f1a2f";
-	
-	public static final String BMI_CONCEPT_UUID = "1342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	
-	public static final String MUAC_CONCEPT_UUID = "1343AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	
-	public static final String WHO_CLINICAL_STAGE_INTAKE_UUID = "a90652b2-f2c7-471f-a287-64495d2a6791";
 	
 	// Create Enum of the following filter categories: CHILDREN_ADOLESCENTS,
 	// PREGNANT_BREASTFEEDING, RETURN_FROM_IIT, RETURN_TO_TREATMENT
@@ -235,39 +67,9 @@ public class SSEMRWebServicesController {
 		RETURN_TO_TREATMENT
 	};
 	
-	public static final String CURRENTLY_BREASTFEEDING_CONCEPT_UUID = "e288fc7d-bbc5-479a-b94d-857e3819f926";
-	
-	private static final String CURRENTLY_PREGNANT_CONCEPT_UUID = "235a6246-6179-4309-ba84-6f0ec337eb48";
-	
-	public static final String CONCEPT_BY_UUID = "1065AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
-	
 	private static final double THRESHOLD = 1000.0;
 	
 	private static final int SIX_MONTHS_IN_DAYS = 183;
-	
-	public static final Set<String> FIRST_LINE_REGIMENS = new HashSet<>(
-	        Arrays.asList("9062c6d9-a650-44d2-8929-da84f617c427", "c22e6700-a937-4909-b4ad-e82ff51325ac",
-	            "91f5d0d6-eb81-484f-9376-4bfb926a5a81", "0dd3e78f-e1fc-47de-95bc-1f489d0dfcc5",
-	            "4a86fbee-07a9-422a-bf69-16256c0c2b8b", "03224cae-f115-4814-bd53-c99c72288446",
-	            "c224b116-27ec-4156-93ba-d4838a3ac1c0", "5efe8d99-c65e-4136-8820-5f3646437ff7",
-	            "f8f64be8-ccb4-404d-b99e-3c4975155da5", "28c5d192-ba71-4ef5-8604-ecf6bd177126",
-	            "3eaf04dc-e284-42f7-860e-02cda37cf230", "0372f3fb-5e8a-474f-8250-01af7a485778",
-	            "ce2412c4-a041-4328-bfaa-35e041ca4802", "6ed47806-8809-4c5a-a1b6-fe2ec0158563",
-	            "f6b1c6ea-b0a2-46a0-b7e0-3038d268356c", "2e1ab9d3-7fe1-48ba-a12c-fd8d26bc161d",
-	            "99f54f96-e761-4d86-bb1b-0abc2a24fa16", "5287f2a4-23e5-4314-b60c-0a4b91753ec6"));
-	
-	public static final Set<String> SECOND_LINE_REGIMENS = new HashSet<>(
-	        Arrays.asList("bd97cacd-4a91-4901-8803-3a4a2e5f1ca8", "ad6ff4ef-769e-4aec-b8bb-7f033fe6aaaa",
-	            "47167ec1-4957-4d0a-a58c-3894bdeb93ff", "e649a0ec-e193-4af0-bb49-02687107a893",
-	            "accca537-b8ee-41ec-b902-7de814d099b2", "77f201fc-aefc-4068-baa7-cb3284782a38",
-	            "cb0f9fcd-fb52-493f-95aa-d0197387fbdb", "28790bde-81db-4490-806b-ac10c17b41dc",
-	            "aae69cae-2806-4e8b-a916-f22ed733a19b", "64336206-c9bc-4d37-accf-c7abac7a37f6",
-	            "25f0cca5-902d-4e36-9e4f-5ce5da744a75", "b23cf614-dfec-48c9-a12f-ba577e28347d",
-	            "dabc93c3-8c3d-41e1-b3e3-d7e14c4765b6", "da3c6710-c431-4582-a444-a466d54693ec",
-	            "6c383d11-2b29-4cc2-bfa4-811ff7a988f1", "82725d14-00c6-4864-bf8b-ad5db0b3c3fa",
-	            "140ede93-5691-463b-9d17-2dc8834621f8", "06017ac1-2ce8-4689-a3bf-4e9f3d54978f",
-	            "2c0a5b91-7b2a-4f8e-86fd-a8007841fca8", "50b60d77-186d-4a0d-8784-659ee2d60ec9",
-	            "78e49624-0e33-4374-93b7-60b132b26dae"));
 	
 	/** Logger for this class and subclasses */
 	protected final Log log = LogFactory.getLog(getClass());
@@ -282,7 +84,6 @@ public class SSEMRWebServicesController {
 	 * @return
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/forms")
-	// gets all visit forms for a patient
 	@ResponseBody
 	public Object getAllAvailableFormsForVisit(HttpServletRequest request, @RequestParam("patientUuid") String patientUuid) {
 		if (StringUtils.isBlank(patientUuid)) {
@@ -297,6 +98,9 @@ public class SSEMRWebServicesController {
 			        HttpStatus.NOT_FOUND);
 		}
 		
+		// Calculate the patient's age
+		int patientAge = patient.getAge();
+		
 		List<Visit> activeVisits = Context.getVisitService().getActiveVisitsByPatient(patient);
 		ArrayNode formList = JsonNodeFactory.instance.arrayNode();
 		ObjectNode allFormsObj = JsonNodeFactory.instance.objectNode();
@@ -304,50 +108,56 @@ public class SSEMRWebServicesController {
 		if (!activeVisits.isEmpty()) {
 			Visit patientVisit = activeVisits.get(0);
 			
-			/**
-			 * {uuid: string; encounterType?: EncounterType; name: string; display: string; version: string;
-			 * published: boolean; retired: boolean;}
-			 */
+			FormManager formManager = CoreContext.getInstance().getManager(FormManager.class);
+			List<FormDescriptor> uncompletedFormDescriptors = formManager.getAllUncompletedFormsForVisit(patientVisit);
 			
-			/*
-			 * FormManager formManager =
-			 * CoreContext.getInstance().getManager(FormManager.class); List<FormDescriptor>
-			 * uncompletedFormDescriptors =
-			 * formManager.getAllUncompletedFormsForVisit(patientVisit);
-			 * 
-			 * if (!uncompletedFormDescriptors.isEmpty()) {
-			 * 
-			 * for (FormDescriptor descriptor : uncompletedFormDescriptors) {
-			 * if(!descriptor.getTarget().getRetired()) { ObjectNode formObj =
-			 * generateFormDescriptorPayload(descriptor); formObj.put("formCategory",
-			 * "available"); formList.add(formObj); } } PatientWrapper patientWrapper = new
-			 * PatientWrapper(patient); Encounter lastMchEnrollment =
-			 * patientWrapper.lastEncounter(MetadataUtils.existing(EncounterType.class,
-			 * MchMetadata._EncounterType.MCHMS_ENROLLMENT)); if(lastMchEnrollment != null)
-			 * { ObjectNode delivery = JsonNodeFactory.instance.objectNode();
-			 * delivery.put("uuid", MCH_DELIVERY_FORM_UUID); delivery.put("name",
-			 * "Delivery"); delivery.put("display", "MCH Delivery Form");
-			 * delivery.put("version", "1.0"); delivery.put("published", true);
-			 * delivery.put("retired", false); formList.add(delivery); } CalculationResult
-			 * eligibleForDischarge =
-			 * EmrCalculationUtils.evaluateForPatient(EligibleForMchmsDischargeCalculation.
-			 * class, null, patient); if((Boolean) eligibleForDischarge.getValue() == true)
-			 * { ObjectNode discharge = JsonNodeFactory.instance.objectNode();
-			 * discharge.put("uuid", MCH_DISCHARGE_FORM_UUID); discharge.put("name",
-			 * "Discharge"); discharge.put("display", "MCH Discharge Form");
-			 * discharge.put("version", "1.0"); discharge.put("published", true);
-			 * discharge.put("retired", false); formList.add(discharge); } ObjectNode
-			 * labOrder = JsonNodeFactory.instance.objectNode(); labOrder.put("uuid",
-			 * LAB_ORDERS_FORM_UUID); labOrder.put("name", "Laboratory Test Orders");
-			 * labOrder.put("display", "Laboratory Test Orders"); labOrder.put("version",
-			 * "1.0"); labOrder.put("published", true); labOrder.put("retired", false);
-			 * formList.add(labOrder); }
-			 */
+			if (!uncompletedFormDescriptors.isEmpty()) {
+				for (FormDescriptor descriptor : uncompletedFormDescriptors) {
+					String formUuid = descriptor.getTarget().getUuid();
+					
+					// Validate Pediatric HIV care and treatment intake form for children ≤ 15 years
+					if (formUuid.equals("356def6a-fa66-4a78-97d5-b43154064875") && patientAge <= 15) {
+						ObjectNode formObj = generateFormDescriptorPayload(descriptor);
+						formObj.put("formCategory", "available");
+						formList.add(formObj);
+					}
+					// Validate Adult and Adolescent intake Form for patients ≥ 16 years
+					else if (formUuid.equals("b645dbdd-7d58-41d4-9b11-eeff023b8ee5") && patientAge >= 16) {
+						ObjectNode formObj = generateFormDescriptorPayload(descriptor);
+						formObj.put("formCategory", "available");
+						formList.add(formObj);
+					}
+					// Add other forms that are not restricted by age
+					else if (!formUuid.equals("356def6a-fa66-4a78-97d5-b43154064875")
+					        && !formUuid.equals("b645dbdd-7d58-41d4-9b11-eeff023b8ee5")) {
+						if (!descriptor.getTarget().getRetired()) {
+							ObjectNode formObj = generateFormDescriptorPayload(descriptor);
+							formObj.put("formCategory", "available");
+							formList.add(formObj);
+						}
+					}
+				}
+			}
 		}
 		
 		allFormsObj.put("results", formList);
-		
 		return allFormsObj.toString();
+	}
+	
+	private ObjectNode generateFormDescriptorPayload(FormDescriptor descriptor) {
+		ObjectNode formObj = JsonNodeFactory.instance.objectNode();
+		ObjectNode encObj = JsonNodeFactory.instance.objectNode();
+		Form frm = descriptor.getTarget();
+		encObj.put("uuid", frm.getEncounterType().getUuid());
+		encObj.put("display", frm.getEncounterType().getName());
+		formObj.put("uuid", descriptor.getTargetUuid());
+		formObj.put("encounterType", encObj);
+		formObj.put("name", frm.getName());
+		formObj.put("display", frm.getName());
+		formObj.put("version", frm.getVersion());
+		formObj.put("published", frm.getPublished());
+		formObj.put("retired", frm.getRetired());
+		return formObj;
 	}
 	
 	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/allClients")
@@ -2300,7 +2110,7 @@ public class SSEMRWebServicesController {
 	
 	private static String getVLResults(Patient patient) {
 		Concept viralLoadResultsConcept = Context.getConceptService().getConceptByUuid(VIRAL_LOAD_RESULTS_UUID);
-		Concept bdlConcept = Context.getConceptService().getConceptByUuid(BDL_CONCEPT_UUID); // Correct variable name
+		Concept bdlConcept = Context.getConceptService().getConceptByUuid(BDL_CONCEPT_UUID);
 		Concept viralLoadConcept = Context.getConceptService().getConceptByUuid(VIRAL_LOAD_CONCEPT_UUID);
 		
 		List<Obs> getVLResultNumericObs = Context.getObsService().getObservations(
@@ -2512,7 +2322,7 @@ public class SSEMRWebServicesController {
 	
 	/**
 	 * Returns a list of patients on appointment.
-	 *
+	 * 
 	 * @return A JSON representation of the list of patients on appointment, including summary
 	 *         information about each patient.
 	 */
@@ -2583,7 +2393,7 @@ public class SSEMRWebServicesController {
 	
 	/**
 	 * Returns a list of patients who missed an appointment.
-	 *
+	 * 
 	 * @return A JSON representation of the list of patients who missed an appointment, including
 	 *         summary information about each patient.
 	 */
