@@ -3,6 +3,7 @@ package org.openmrs.module.ssemrws.web.controller;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.openmrs.*;
 import org.openmrs.api.context.Context;
+import org.openmrs.module.ssemrws.queries.EacSessionService;
 import org.openmrs.module.ssemrws.queries.GetDueForVL;
 import org.openmrs.module.ssemrws.web.constants.FilterUtility;
 import org.openmrs.module.webservices.rest.web.RestConstants;
@@ -34,8 +35,11 @@ public class ViralLoadController {
 	
 	private final GetDueForVL getDueForVl;
 	
-	public ViralLoadController(GetDueForVL getDueForVl) {
+	private final EacSessionService eacSessionService;
+	
+	public ViralLoadController(GetDueForVL getDueForVl, EacSessionService eacSessionService) {
 		this.getDueForVl = getDueForVl;
+		this.eacSessionService = eacSessionService;
 	}
 	
 	/**
@@ -246,7 +250,7 @@ public class ViralLoadController {
 		Date[] dates = getStartAndEndDate(qStartDate, qEndDate, dateTimeFormatter);
 		
 		int totalPatients = Context.getPatientService().getAllPatients().size();
-
+		
 		if (totalPatients == 0) {
 			Map<String, Object> response = new HashMap<>();
 			response.put("Total Patients", 0);
@@ -256,10 +260,11 @@ public class ViralLoadController {
 		}
 		
 		List<Patient> patientsWithVLCoverage = fetchPatientsWithViralLoadCoverage(dates[0], dates[1]);
-
+		
 		if (patientsWithVLCoverage == null) {
 			patientsWithVLCoverage = new ArrayList<>();
-		};
+		}
+		;
 		int vlCoverage = patientsWithVLCoverage.size();
 		
 		int notVlCovered = totalPatients - vlCoverage;
@@ -429,5 +434,51 @@ public class ViralLoadController {
 		    Arrays.asList(FIRST_EAC_SESSION, SECOND_EAC_SESSION, THIRD_EAC_SESSION, EXTENDED_EAC_CONCEPT_UUID,
 		        REAPEAT_VL_COLLECTION, REPEAT_VL_RESULTS, HIGH_VL_ENCOUNTERTYPE_UUID, ACTIVE_REGIMEN_CONCEPT_UUID),
 		    EAC_SESSION_CONCEPT_UUID);
+	}
+	
+	@RequestMapping(method = RequestMethod.GET, value = "/dashboard/completedEACSessions")
+	@ResponseBody
+	public Object eacSessions(@RequestParam("startDate") String qStartDate, @RequestParam("endDate") String qEndDate)
+	        throws ParseException {
+		
+		SimpleDateFormat parser = new SimpleDateFormat("yyyy-MM-dd");
+		Date startDate = parser.parse(qStartDate);
+		Date endDate = parser.parse(qEndDate);
+		
+		Map<String, Map<String, Integer>> monthlyCounts = new LinkedHashMap<>();
+		
+		List<Object[]> results = eacSessionService.getEacSessionCountsByDateRange(startDate, endDate);
+		
+		for (Object[] row : results) {
+			String eacType = (String) row[0];
+			String month = (String) row[1];
+			Integer count = ((Number) row[2]).intValue();
+			
+			monthlyCounts.computeIfAbsent(month, k -> new LinkedHashMap<>()).put(eacType, count);
+		}
+		
+		List<Map<String, Object>> resultList = new ArrayList<>();
+		List<String> eacTypesInOrder = Arrays.asList("EAC1", "EAC2", "EAC3");
+		
+		for (Map.Entry<String, Map<String, Integer>> entry : monthlyCounts.entrySet()) {
+			String month = entry.getKey();
+			Map<String, Integer> eacDataForMonth = entry.getValue();
+			Map<String, Object> formattedMonthObject = new LinkedHashMap<>();
+			
+			for (String eacType : eacTypesInOrder) {
+				if (eacDataForMonth.containsKey(eacType)) {
+					formattedMonthObject.put(month + " " + eacType, eacDataForMonth.get(eacType));
+				}
+			}
+			
+			if (!formattedMonthObject.isEmpty()) {
+				resultList.add(formattedMonthObject);
+			}
+		}
+		
+		Map<String, Object> finalPayload = new HashMap<>();
+		finalPayload.put("data", resultList);
+		
+		return finalPayload;
 	}
 }
