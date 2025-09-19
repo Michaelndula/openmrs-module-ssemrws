@@ -29,11 +29,16 @@
 	</modules>
 
 	<repositories>
-		<repository>
-			<id>openmrs-repo</id>
-			<name>OpenMRS Nexus Repository</name>
-			<url>https://mavenrepo.openmrs.org/public</url>
-		</repository>
+        <repository>
+            <id>repsy</id>
+            <name>My Private Maven Repository on Repsy</name>
+            <url>https://repo.repsy.io/mvn/intellisoftdev/default</url>
+        </repository>
+        <repository>
+            <id>openmrs-repo</id>
+            <name>OpenMRS Nexus Repository</name>
+            <url>https://mavenrepo.openmrs.org/public</url>
+        </repository>
 		<repository>
 			<id>central</id>
 			<name>Maven Repository Switchboard</name>
@@ -140,6 +145,17 @@
 		<mockito.version>1.10.19</mockito.version>
 		<powermock.version>1.7.3</powermock.version>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>repsy</id>
+            <url>https://repo.repsy.io/mvn/intellisoftdev/default</url>
+        </repository>
+        <snapshotRepository>
+            <id>repsy</id>
+            <url>https://repo.repsy.io/mvn/intellisoftdev/default</url>
+        </snapshotRepository>
+    </distributionManagement>
 
 	<build>
 		<plugins>
